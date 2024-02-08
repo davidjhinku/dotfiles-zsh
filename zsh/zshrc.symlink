@@ -48,3 +48,52 @@ zle -N up-line-or-beginning-search
 zle -N down-line-or-beginning-search
 bindkey "^[[A" up-line-or-beginning-search # Up
 bindkey "^[[B" down-line-or-beginning-search # Down
+
+# AWS
+export AWS_USERNAME="david.jhinku"
+alias ldl="login_data_lake"
+alias lmd="login_mask_data"
+
+function aws_mfa(){
+  unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+  local token="$1"
+
+  echo -n "MFA Token: "
+  read token
+
+  local result=$(aws sts get-session-token --serial-number arn:aws:iam::030664766007:mfa/$AWS_USERNAME --token-code "$token" --duration-seconds 43200)
+  export AWS_ACCESS_KEY_ID=$(echo "$result" | jq -r '.Credentials.AccessKeyId')
+  export AWS_SECRET_ACCESS_KEY=$(echo "$result" | jq -r '.Credentials.SecretAccessKey')
+  export AWS_SESSION_TOKEN=$(echo "$result" | jq -r '.Credentials.SessionToken')
+}
+
+function login_data_lake() {
+    if [ -z "$AWS_SESSION_TOKEN" ]; then
+       aws_mfa;
+    fi;
+
+    local result=$(aws redshift get-cluster-credentials --cluster-identifier data-lake \
+                      --db-user $AWS_USERNAME --db-name dev --duration-seconds 3600 --auto-create --db-groups payments)
+
+	export PGUSER=$(echo "$result" | jq -r '.DbUser')
+	export PGPASSWORD=$(echo "$result" | jq -r '.DbPassword')
+
+    echo 'You can connect via if on the VPN: `pgcli -h data-lake.sezzle.internal -p 5439 -U "$DB_USER" dev`'
+    echo 'You can view your temporary password via `echo $PGPASSWORD`'
+}
+
+function login_mask_data() {
+    if [ -z "$AWS_SESSION_TOKEN" ]; then
+       aws_mfa;
+    fi;
+
+    local result=$(aws redshift get-cluster-credentials --cluster-identifier data-lake --db-user $AWS_USERNAME --db-name staging --duration-seconds 3600 --auto-create --db-groups analysis)
+
+    export MASK_USER=$(echo "$result" | jq -r '.DbUser')
+    export MASK_PASS=$(echo "$result" | jq -r '.DbPassword')
+    export MASK_HOST="data-lake.sezzle.internal"
+    export MASK_SCHEMA=$(echo $AWS_USERNAME|sed "s/\./_/g")
+	
+    echo 'You can connect via if on the VPN: `pgcli -h data-lake.sezzle.internal -p 5439 -U "$MASK_USER" staging`'
+    echo 'You can view your temporary password via `echo $MASK_PASS`'
+}
