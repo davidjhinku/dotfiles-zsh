@@ -7,18 +7,18 @@ then
 fi
 
 # The rest of my fun git aliases
-alias gl='git pull --prune'
-alias glog="git log --graph --pretty=format:'%Cred%h%Creset %an: %s - %Creset %C(yellow)%d%Creset %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 alias gp='git push origin HEAD'
+alias gpp='git pull --prune'
+alias glog="git log --graph --pretty=format:'%Cred%h%Creset %an: %s - %Creset %C(yellow)%d%Creset %Cgreen(%cr)%Creset' --abbrev-commit --date=relative"
 
 # Remove `+` and `-` from start of diff lines; just rely upon color.
 alias gd='git diff --color | sed "s/^\([^-+ ]*\)[-+ ]/\\1/" | less -r'
 
-alias gc='git commit'
 alias gca='git commit -a'
-alias gco='git checkout'
-alias gcb='git copy-branch-name'
+alias gc='git checkout'
+alias gcb='git checkout -b'
 alias gb='git branch'
+alias gbd='git branch -D'
 alias gs='git status -sb' # upgrade your git if -sb breaks for you. it's fun.
 alias ga="git add ."
 alias gcm="git commit -m"
